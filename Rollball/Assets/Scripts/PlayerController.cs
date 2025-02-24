@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -10,7 +11,9 @@ public class PlayerController : MonoBehaviour
     private float movementX, movementY;
     public float speed = 0;
     public TextMeshProUGUI countText;
-    public GameObject winTextObject;
+    public GameObject winTextObject, replayBtn;
+    public float jumpForce = 5.0f;
+    private bool isGrounded;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -19,6 +22,7 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         SetCountText();
         winTextObject.SetActive(false);
+        replayBtn.SetActive(false);
     }
 
     private void FixedUpdate()
@@ -43,11 +47,20 @@ public class PlayerController : MonoBehaviour
         movementY = movementVector.y;
     }
 
+    void OnJump(InputValue value) {
+        if (isGrounded)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            isGrounded = false;
+        }
+    }
+
     void SetCountText()
     {
         countText.text = "Count: " + count.ToString();
-        if (count >= 7)
+        if (count >= 8)
         {
+            replayBtn.SetActive(true);
             winTextObject.SetActive(true);
             Destroy(GameObject.FindGameObjectWithTag("Enemy"));
         }
@@ -55,11 +68,28 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        if (collision.gameObject.CompareTag("Enemy"))
+        if (collision.gameObject.CompareTag("Ground"))
         {
-            Destroy(gameObject);
+            isGrounded = true;
+        }
+        else if (collision.gameObject.CompareTag("Enemy"))
+        {
+            gameObject.SetActive(false);
             winTextObject.gameObject.SetActive(true);
+            replayBtn.SetActive(true);
             winTextObject.GetComponent<TextMeshProUGUI>().text = "You Lose!";
         }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = false;
+        }
+    }
+
+    public void Replay() {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }
